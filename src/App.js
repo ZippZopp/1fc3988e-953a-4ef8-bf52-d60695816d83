@@ -8,17 +8,17 @@ function Square({ value, onSquareClick }) {
   );
 }
 
-function Board({ xIsNext, squares, onPlay }) {
+function Board({ number, squares, onPlay }) {
   const handleClick = (idx) => {
-    if (calculateWinner(squares) || squares[idx]) {
+    if (foundWinner(squares) || squares[idx]) {
       return;
     }
     const nextSquares = squares.slice();
-    nextSquares[idx] = xIsNext ? 'X' : 'O';
+    nextSquares[idx] = number;
     onPlay(nextSquares);
   };
-  const winner = calculateWinner(squares);
-  const status = winner ? `Winner: ${winner}` : `Next player: ${xIsNext ? 'X' : 'O'}`;
+
+  const status = foundWinner(squares) ? `Winner: ${isOdd(number) ? "Odd" : "Even"}` : `${isOdd(number) ? "Odd" : "Even"}`;
 
   return (
     <>
@@ -42,18 +42,29 @@ function Board({ xIsNext, squares, onPlay }) {
 }
 
 export default function Game() {
-
   const [history, setHistory] = useState([Array(9).fill(null)]);
   const [currentMove, setCurrentMove] = useState(0);
-  const xIsNext = currentMove % 2 === 0;
   const currentSquares = history[currentMove];
+  const [currentNumber, setCurrentNumber] = useState(1);
+  const currentNumbers = Array.from({ length: 9 }, (v, i) => ({
+    number: i + 1,
+    used: currentSquares.includes(i+1),
+}));
+  const oddsTurn = currentMove % 2 === 0;
+
+
+  const validDivisibility = isOdd(currentNumber) !== oddsTurn;
+  const areNumbersAvaidable = currentNumbers.some(number => (!number.used));
+  if (validDivisibility && areNumbersAvaidable) {
+    setCurrentNumber(currentNumbers.find(number => ((oddsTurn === isOdd(number.number))  && !number.used)).number);
+  }
 
   function handlePlay(nextSquares) {
+    console.log(nextSquares);
     const nextHistory = [...history.slice(0, currentMove + 1), nextSquares];
     setHistory(nextHistory);
     setCurrentMove(nextHistory.length - 1);
   }
-
   function jumpTo(nextMove) {
     setCurrentMove(nextMove);
   }
@@ -67,10 +78,26 @@ export default function Game() {
     );
   });
 
+
   return (
     <div className="game">
       <div className="game-board">
-        <Board xIsNext={xIsNext} squares={currentSquares} onPlay={handlePlay} />
+        <Board number={currentNumber} squares={currentSquares} onPlay={handlePlay} />
+      </div>
+      <div className="NumberSelection">
+          {currentNumbers.map((number, _) => {
+            return (
+              <button 
+                key={"numberSelection"+number.number}
+                className="numberSelection" 
+                disabled={number.used ||(oddsTurn !== isOdd(number.number)) || foundWinner(currentSquares)}
+                style={{ backgroundColor: number.number === currentNumber ? 'red' : 'initial' }}
+                onClick= {() => { setCurrentNumber(number.number)}}
+                >
+              {number.number}
+              </button>
+            );
+          })}
       </div>
       <div className="game-info">
         <ol>{moves}</ol>
@@ -79,7 +106,7 @@ export default function Game() {
   );
 }
 
-function calculateWinner(squares) {
+function foundWinner(squares) {
   const lines = [
     [0, 1, 2],
     [3, 4, 5],
@@ -90,11 +117,16 @@ function calculateWinner(squares) {
     [0, 4, 8],
     [2, 4, 6],
   ];
-  for (let i = 0; i < lines.length; i++) {
-    const [a, b, c] = lines[i];
-    if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
-      return squares[a];
+  for (let idx = 0; idx < lines.length; idx++) {
+    const [a, b, c] = lines[idx];
+    if (squares[a] + squares[b] + squares[c] === 15) {
+      return true;
     }
   }
-  return null;
+  return false;
+}
+
+
+function isOdd(number){
+  return number % 2 !== 0
 }
