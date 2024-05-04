@@ -1,12 +1,102 @@
-import { useState } from 'react';
+import { useState, Component } from 'react';
 
-function Square({ value, onSquareClick }) {
-  return (
-    <button className="square" onClick={onSquareClick}>
-      {value}
-    </button>
-  );
+export default class Game extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      history: [Array(9).fill(null)],
+      currentMove: 0,
+      currentNumber: 1,
+    };
+  }
+
+  render() {
+    const { history, currentMove, currentNumber } = this.state;
+    const currentSquares = history[currentMove];
+    const currentNumbers = Array.from({ length: 9 }, (v, i) => ({
+      number: i + 1,
+      used: currentSquares.includes(i+1),
+    }));
+    const oddsTurn = currentMove % 2 === 0;
+
+    return (
+      <div className="game">
+        <div className="game-board">
+          <Board number={currentNumber} squares={currentSquares} onPlay={this.handlePlay} />
+        </div>
+        <div className="NumberSelection">
+            {currentNumbers.map((number, _) => {
+              return (
+                this.createNumberSelectionField(number, oddsTurn, currentSquares, currentNumber)
+              );
+            })}
+        </div>
+        <div className="game-info">
+          <ol>{this.getMoves()}</ol>
+        </div>
+      </div>
+    );
+  }
+
+  createNumberSelectionField(number, oddsTurn, currentSquares, currentNumber) {
+    return <button
+      key={"numberSelection" + number.number}
+      className="numberSelection"
+      disabled={number.used || (oddsTurn !== isOdd(number.number)) || foundWinner(currentSquares)}
+      style={{ backgroundColor: number.number === currentNumber ? 'red' : 'initial' }}
+      onClick={() => { this.setState({ currentNumber: number.number }); } }
+    >
+      {number.number}
+    </button>;
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    const { currentMove } = this.state;
+    if (prevState.currentMove !== currentMove) {
+      const currentNumbers = Array.from({ length: 9 }, (_, i) => ({
+        number: i + 1,
+        used: this.state.history[currentMove].includes(i + 1),
+      }));
+      const oddsTurn = currentMove % 2 === 0;
+      const areNumbersAvailable = currentNumbers.some(number => !number.used);
+      const validDivisibility = isOdd(this.state.currentNumber) !== oddsTurn;
+
+      if (validDivisibility && areNumbersAvailable) {
+        const newNumber = currentNumbers.find(number => (oddsTurn === isOdd(number.number)) && !number.used).number;
+        this.setState({
+          currentNumber: newNumber,
+        });
+      }
+    }
+  }
+
+  handlePlay = (nextSquares) => {
+    const { history, currentMove } = this.state;
+    const nextHistory = [...history.slice(0, currentMove + 1), nextSquares];
+    this.setState({
+      history: nextHistory,
+      currentMove: nextHistory.length - 1,
+    });
+  }
+
+  jumpTo = (nextMove) => {
+    this.setState({
+      currentMove: nextMove,
+    });
+  }
+  getMoves(){
+    return this.state.history.map((squares, move) => {
+      let description = move > 0 ? 'Go to move #' + move : 'Go to game start';
+      return (
+        <li key={move}>
+          <button onClick={() => this.jumpTo(move)}>{description}</button>
+        </li>
+      );
+    });
+  }
+
 }
+
 
 function Board({ number, squares, onPlay }) {
   const handleClick = (idx) => {
@@ -41,68 +131,11 @@ function Board({ number, squares, onPlay }) {
   );
 }
 
-export default function Game() {
-  const [history, setHistory] = useState([Array(9).fill(null)]);
-  const [currentMove, setCurrentMove] = useState(0);
-  const currentSquares = history[currentMove];
-  const [currentNumber, setCurrentNumber] = useState(1);
-  const currentNumbers = Array.from({ length: 9 }, (v, i) => ({
-    number: i + 1,
-    used: currentSquares.includes(i+1),
-}));
-  const oddsTurn = currentMove % 2 === 0;
-
-
-  const validDivisibility = isOdd(currentNumber) !== oddsTurn;
-  const areNumbersAvaidable = currentNumbers.some(number => (!number.used));
-  if (validDivisibility && areNumbersAvaidable) {
-    setCurrentNumber(currentNumbers.find(number => ((oddsTurn === isOdd(number.number))  && !number.used)).number);
-  }
-
-  function handlePlay(nextSquares) {
-    console.log(nextSquares);
-    const nextHistory = [...history.slice(0, currentMove + 1), nextSquares];
-    setHistory(nextHistory);
-    setCurrentMove(nextHistory.length - 1);
-  }
-  function jumpTo(nextMove) {
-    setCurrentMove(nextMove);
-  }
-
-  const moves = history.map((squares, move) => {
-    let description = move > 0 ? 'Go to move #' + move : 'Go to game start';
-    return (
-      <li key={move}>
-        <button onClick={() => jumpTo(move)}>{description}</button>
-      </li>
-    );
-  });
-
-
+function Square({ value, onSquareClick }) {
   return (
-    <div className="game">
-      <div className="game-board">
-        <Board number={currentNumber} squares={currentSquares} onPlay={handlePlay} />
-      </div>
-      <div className="NumberSelection">
-          {currentNumbers.map((number, _) => {
-            return (
-              <button 
-                key={"numberSelection"+number.number}
-                className="numberSelection" 
-                disabled={number.used ||(oddsTurn !== isOdd(number.number)) || foundWinner(currentSquares)}
-                style={{ backgroundColor: number.number === currentNumber ? 'red' : 'initial' }}
-                onClick= {() => { setCurrentNumber(number.number)}}
-                >
-              {number.number}
-              </button>
-            );
-          })}
-      </div>
-      <div className="game-info">
-        <ol>{moves}</ol>
-      </div>
-    </div>
+    <button className="square" onClick={onSquareClick}>
+      {value}
+    </button>
   );
 }
 
