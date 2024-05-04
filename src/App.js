@@ -25,11 +25,7 @@ export default class Game extends Component {
           <Board number={currentNumber} squares={currentSquares} onPlay={this.handlePlay} />
         </div>
         <div className="NumberSelection">
-            {currentNumbers.map((number, _) => {
-              return (
-                this.createNumberSelectionField(number, oddsTurn, currentSquares, currentNumber)
-              );
-            })}
+            {this.createNumberSelectionField(currentNumbers, oddsTurn, currentSquares, currentNumber)}
         </div>
         <div className="game-info">
           <ol>{this.getMoves()}</ol>
@@ -38,16 +34,19 @@ export default class Game extends Component {
     );
   }
 
-  createNumberSelectionField(number, oddsTurn, currentSquares, currentNumber) {
-    return <button
-      key={"numberSelection" + number.number}
-      className="numberSelection"
-      disabled={number.used || (oddsTurn !== isOdd(number.number)) || foundWinner(currentSquares)}
-      style={{ backgroundColor: number.number === currentNumber ? 'red' : 'initial' }}
-      onClick={() => { this.setState({ currentNumber: number.number }); } }
-    >
-      {number.number}
-    </button>;
+
+  createNumberSelectionField(currentNumbers, oddsTurn, currentSquares, currentNumber) {
+    return currentNumbers.map((number) => (
+      <button
+        key={"numberSelection" + number.number}
+        className="numberSelection"
+        disabled={number.used || (oddsTurn !== isOdd(number.number)) || foundWinner(currentSquares)}
+        style={{ backgroundColor: number.number === currentNumber ? 'red' : 'initial' }}
+        onClick={() => { this.setState({ currentNumber: number.number }); } }
+      >
+        {number.number}
+      </button>
+    ));
   }
 
   componentDidUpdate(prevProps, prevState) {
